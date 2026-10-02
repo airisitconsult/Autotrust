@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "autotrust-backend",
+      "runtimeExecutable": "backend\\run_dev.cmd",
+      "runtimeArgs": [],
+      "port": 8000
+    },
+    {
+      "name": "autotrust-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5173"],
+      "port": 5173
+    }
+  ]
+}
