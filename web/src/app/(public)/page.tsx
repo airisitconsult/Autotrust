@@ -65,16 +65,9 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      {/* The hero background is sampled from the photo itself (slate #2a303d to warm grey #767c81) so the picture melts into it. */}
-      <section
-        className="relative isolate overflow-hidden pb-28 text-white sm:pb-32"
-        style={{
-          backgroundColor: "#262b37",
-          backgroundImage:
-            "radial-gradient(60% 80% at 82% 62%, rgba(124,110,110,0.55) 0%, rgba(118,124,129,0.28) 38%, transparent 72%), linear-gradient(120deg, #1d212b 0%, #262b37 45%, #3a3d47 100%)",
-        }}
-      >
-        <div className="absolute -left-40 -top-40 -z-10 h-[30rem] w-[30rem] rounded-full bg-white/[0.06] blur-3xl" aria-hidden />
+      <section className="relative isolate overflow-hidden bg-brand-950 pb-28 text-white sm:pb-32">
+        <div className="absolute -left-40 -top-40 -z-10 h-[30rem] w-[30rem] rounded-full bg-brand-500/30 blur-3xl" aria-hidden />
+        <div className="absolute -bottom-52 right-0 -z-10 h-[32rem] w-[32rem] rounded-full bg-trust-500/15 blur-3xl" aria-hidden />
         <div
           className="absolute inset-0 -z-10 opacity-[0.06]"
           style={{
@@ -84,7 +77,7 @@ export default async function HomePage() {
           }}
           aria-hidden
         />
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-6 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:px-8 lg:pt-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-6 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[0.9fr_1.2fr] lg:gap-6 lg:px-8 lg:pt-20">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-100 ring-1 ring-white/15">
               <span className="h-1.5 w-1.5 rounded-full bg-trust-400" aria-hidden />
@@ -122,7 +115,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-xl pt-6 lg:ml-auto lg:mr-0 lg:max-w-[34rem]">
+          <div className="relative mx-auto w-full max-w-2xl pt-10 lg:ml-auto lg:mr-0 lg:max-w-none lg:pt-6">
             <HeroCar />
             <div className="absolute -top-1 right-3 flex items-center gap-2 rounded-2xl bg-white px-3 py-2 text-ink-900 shadow-lift sm:right-5 sm:px-3.5 sm:py-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-trust-500 text-sm font-bold text-white">
