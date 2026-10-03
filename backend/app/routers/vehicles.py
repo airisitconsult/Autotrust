@@ -1,12 +1,13 @@
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_optional_user, require_seller
 from app.models.user import User
-from app.models.vehicle import VehicleCondition, VehicleFeature
+from app.models.vehicle import BodyType, VehicleCondition, VehicleFeature
 from app.schemas.inspection import InspectionRead
 from app.schemas.vehicle import PhotoRead, VehicleCreate, VehicleRead, VehicleUpdate
 from app.core import storage
@@ -16,8 +17,10 @@ from app.services.vehicle_service import (
     NotVehicleOwnerError,
     PhotoNotFoundError,
     PhotoTooLargeError,
+    StatusChangeNotAllowedError,
     TooManyPhotosError,
     UnsupportedImageTypeError,
+    VehicleHasHistoryError,
     VehicleNotFoundError,
     VinAlreadyRegisteredError,
 )
@@ -29,7 +32,7 @@ router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 def create_vehicle(
     vehicle_in: VehicleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_seller),
 ):
     try:
         return vehicle_service.create_vehicle(db, current_user, vehicle_in)
@@ -50,6 +53,7 @@ def list_vehicles(
     min_year: int | None = None,
     max_year: int | None = None,
     condition: VehicleCondition | None = None,
+    body_type: BodyType | None = None,
     state: str | None = None,
     lga: str | None = None,
     is_vetted: bool | None = None,
@@ -66,6 +70,7 @@ def list_vehicles(
         min_year=min_year,
         max_year=max_year,
         condition=condition,
+        body_type=body_type.value if body_type else None,
         state=state,
         lga=lga,
         is_vetted=is_vetted,
@@ -104,9 +109,13 @@ def list_my_vehicles(
 
 
 @router.get("/{vehicle_id}", response_model=VehicleRead)
-def get_vehicle(vehicle_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_vehicle(
+    vehicle_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    viewer: User | None = Depends(get_optional_user),
+):
     try:
-        return vehicle_service.get_vehicle(db, vehicle_id)
+        return vehicle_service.get_visible_vehicle(db, vehicle_id, viewer)
     except VehicleNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
 
@@ -129,12 +138,15 @@ def update_vehicle(
         )
     except InvalidLgaForStateError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    except StatusChangeNotAllowedError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 @router.get("/{vehicle_id}/inspections", response_model=list[InspectionRead])
 def list_vehicle_inspection_history(
     vehicle_id: uuid.UUID,
     db: Session = Depends(get_db),
+    viewer: User | None = Depends(get_optional_user),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -145,7 +157,7 @@ def list_vehicle_inspection_history(
     which is restricted to participants).
     """
     try:
-        vehicle_service.get_vehicle(db, vehicle_id)
+        vehicle_service.get_visible_vehicle(db, vehicle_id, viewer)
     except VehicleNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
     return inspection_service.list_completed_inspections_for_vehicle(
@@ -159,6 +171,7 @@ def list_vehicle_inspection_history(
 def upload_vehicle_photo(
     vehicle_id: uuid.UUID,
     file: UploadFile = File(...),
+    kind: Literal["photo", "spin"] = Query("photo", description="'spin' adds one frame to the 360-degree set"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -170,7 +183,7 @@ def upload_vehicle_photo(
     # pulling an arbitrarily large upload into memory.
     data = file.file.read(storage.MAX_IMAGE_BYTES + 1)
     try:
-        return vehicle_service.add_vehicle_photo(db, vehicle_id, current_user, data)
+        return vehicle_service.add_vehicle_photo(db, vehicle_id, current_user, data, kind)
     except VehicleNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
     except NotVehicleOwnerError:
@@ -187,16 +200,33 @@ def upload_vehicle_photo(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Only JPEG, PNG or WebP images are allowed",
         )
-    except TooManyPhotosError:
+    except TooManyPhotosError as exc:
+        limit = vehicle_service.MAX_SPIN_FRAMES if exc.kind == "spin" else vehicle_service.MAX_PHOTOS_PER_VEHICLE
+        what = "360-degree frames" if exc.kind == "spin" else "photos"
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"A vehicle can have at most {vehicle_service.MAX_PHOTOS_PER_VEHICLE} photos",
+            detail=f"A vehicle can have at most {limit} {what}",
         )
     except storage.StorageError:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Image storage is temporarily unavailable. Please try again.",
         )
+
+
+@router.delete("/{vehicle_id}/spin", status_code=status.HTTP_204_NO_CONTENT)
+def delete_spin_set(
+    vehicle_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Owner-only: remove the whole 360-degree set so it can be re-shot."""
+    try:
+        vehicle_service.delete_spin_set(db, vehicle_id, current_user)
+    except VehicleNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
+    except NotVehicleOwnerError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this vehicle")
 
 
 @router.delete("/{vehicle_id}/photos/{photo_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -226,6 +256,11 @@ def delete_vehicle(
         vehicle_service.delete_vehicle(db, vehicle_id, current_user)
     except VehicleNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
+    except VehicleHasHistoryError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This car has inspection records, so it can't be deleted. Withdraw it from sale instead.",
+        )
     except NotVehicleOwnerError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/*
+ * AutoTrust design tokens.
+ *
+ * Colours come straight from the logo: a royal blue shield and a vivid green
+ * check. Blue is the action colour (buttons, links, focus). Green is reserved
+ * for "verified" so it keeps its meaning. Navy "ink" is for text and heroes.
+ * The dashboard uses the dark "night" scale; the public site is light.
+ *
+ * To re-skin the dashboard accent (e.g. to purple), change the --color-accent
+ * line below.
+ */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  /* Royal blue — primary actions */
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dce8ff;
+  --color-brand-200: #bcd3ff;
+  --color-brand-300: #8fb3ff;
+  --color-brand-400: #5f8bfb;
+  --color-brand-500: #3a68f2;
+  --color-brand-600: #2450dc;
+  --color-brand-700: #1d3fb6;
+  --color-brand-800: #1c3791;
+  --color-brand-900: #1b3175;
+  --color-brand-950: #101e4a;
+
+  /* Verified green — only for trust / success signals */
+  --color-trust-50: #effcf3;
+  --color-trust-100: #d6f7e1;
+  --color-trust-200: #b0eec6;
+  --color-trust-300: #7bdfa2;
+  --color-trust-400: #43c97b;
+  --color-trust-500: #1fae5f;
+  --color-trust-600: #15904d;
+  --color-trust-700: #137240;
+  --color-trust-800: #135b36;
+
+  /* Navy-tinted neutrals — text, borders, light surfaces */
+  --color-ink-50: #f6f8fc;
+  --color-ink-100: #eceff7;
+  --color-ink-200: #dde3f0;
+  --color-ink-300: #c2cbdf;
+  --color-ink-400: #93a1bd;
+  --color-ink-500: #65748f;
+  --color-ink-600: #4a5873;
+  --color-ink-700: #364259;
+  --color-ink-800: #212b44;
+  --color-ink-900: #121a31;
+  --color-ink-950: #0a1022;
+
+  /* Amber — sparing highlights ("Recommended", warnings) */
+  --color-gold-100: #fef3c7;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-700: #b45309;
+
+  /* Dashboard dark surfaces */
+  --color-night-950: #060a16;
+  --color-night-900: #0a1020;
+  --color-night-800: #0f1730;
+  --color-night-700: #151f3f;
+  --color-night-600: #1c284f;
+  --color-night-line: #1f2a4d;
+  --color-night-text: #e8edff;
+  --color-night-muted: #8c99bd;
+
+  /* Dashboard accent (active nav, glows, charts) */
+  --color-accent: #4d7bff;
+  --color-accent-soft: #4d7bff26;
+
+  --shadow-card: 0 1px 2px rgb(18 26 49 / 0.04), 0 8px 24px -8px rgb(18 26 49 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(18 26 49 / 0.05), 0 18px 40px -12px rgb(18 26 49 / 0.22);
+  --shadow-glow: 0 0 0 1px #4d7bff33, 0 10px 40px -10px #4d7bff66;
+}
+
+:root {
+  color-scheme: light;
+}
+
+/* `night:` styles apply to anything inside the dark dashboard shell. */
+@custom-variant night (&:where([data-theme="night"], [data-theme="night"] *));
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ink-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Visible keyboard focus everywhere, without ringing on mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-brand-200);
+}
+
+/* Horizontal scrollers: hide the bar but keep scrolling (swipe on phones). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Thin dark scrollbars inside the dashboard. */
+.night-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-night-600) transparent;
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-ink-100) 25%, var(--color-ink-200) 37%, var(--color-ink-100) 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}

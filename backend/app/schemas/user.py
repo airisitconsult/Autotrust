@@ -20,6 +20,10 @@ class UserCreate(BaseModel):
     # bcrypt has a hard 72-byte limit and silently truncates anything longer
     # instead of erroring — capping here turns that into an explicit 422.
     password: str = Field(max_length=72)
+    # Neither choice is privileged, which is why it's safe to let people pick:
+    # a seller can list cars (after verifying their email) but gets no extra
+    # powers over anyone else. Staff roles can never be chosen here.
+    account_type: Literal["buyer", "seller"] = "buyer"
 
 
 class UserRead(BaseModel):
@@ -35,6 +39,8 @@ class UserRead(BaseModel):
     # Granted permissions (major admins). The super admin holds all of them
     # implicitly, so this is empty for that account.
     permissions: list[Permission] = []
+    email_verified: bool = False
+    has_bank_details: bool = False
     created_at: datetime
 
 
@@ -78,6 +84,27 @@ class PermissionsUpdate(BaseModel):
 class PermissionInfo(BaseModel):
     value: Permission
     description: str
+
+
+class BankDetails(BaseModel):
+    """Where a seller wants their payout sent."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"bank_name": "GTBank", "account_number": "0123456789", "account_name": "Ada Obi"}]
+        }
+    )
+
+    bank_name: str = Field(min_length=2, max_length=60)
+    # Nigerian bank account numbers (NUBAN) are exactly 10 digits.
+    account_number: str = Field(pattern=r"^\d{10}$")
+    account_name: str = Field(min_length=2, max_length=80)
+
+
+class VerifyEmailRequest(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"token": "token-from-the-email-link"}]})
+
+    token: str = Field(min_length=10, max_length=200)
 
 
 class UserLogin(BaseModel):

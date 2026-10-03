@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.nigeria_locations import NIGERIA_STATES_LGAS
-from app.models.vehicle import VehicleCondition, VehicleFeature, VehicleStatus
+from app.models.vehicle import BodyType, VehicleCondition, VehicleFeature, VehicleStatus
 
 
 def _validate_state_lga(state: str, lga: str) -> None:
@@ -27,6 +27,7 @@ class VehicleCreate(BaseModel):
                     "mileage": 45000,
                     "price": 12000,
                     "condition": "good",
+                    "body_type": "sedan",
                     "state": "Lagos",
                     "lga": "Ikeja",
                     "description": "Well maintained, single owner, full service history.",
@@ -43,6 +44,7 @@ class VehicleCreate(BaseModel):
     mileage: int = Field(ge=0)
     price: float = Field(gt=0)
     condition: VehicleCondition
+    body_type: BodyType
     state: str
     lga: str
     description: str
@@ -65,6 +67,7 @@ class VehicleUpdate(BaseModel):
     mileage: int | None = Field(default=None, ge=0)
     price: float | None = Field(default=None, gt=0)
     condition: VehicleCondition | None = None
+    body_type: BodyType | None = None
     state: str | None = None
     lga: str | None = None
     description: str | None = None
@@ -86,6 +89,7 @@ class PhotoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    kind: str = "photo"
     # Large image for the detail page, and a smaller cropped one for cards and
     # thumbnails (identical when photos are on local disk).
     url: str
@@ -104,12 +108,28 @@ class VehicleRead(BaseModel):
     mileage: int
     price: float
     condition: VehicleCondition
+    body_type: BodyType | None = None
     state: str
     lga: str
     description: str
     status: VehicleStatus
     is_vetted: bool
     features: list[VehicleFeature]
-    photos: list[PhotoRead] = []
+    # Gallery pictures. The 360-degree frames are separate (`spin`) so they
+    # never turn up as a card's cover image.
+    photos: list[PhotoRead] = Field(default=[], validation_alias="gallery_photos")
+    spin: list[PhotoRead] = Field(default=[], validation_alias="spin_frames")
     created_at: datetime
     updated_at: datetime
+
+
+class AdminVehicleItem(BaseModel):
+    """A listing as staff see it: the car plus who owns it."""
+
+    vehicle: VehicleRead
+    owner_email: str
+
+
+class AdminVehiclePage(BaseModel):
+    items: list[AdminVehicleItem]
+    total: int

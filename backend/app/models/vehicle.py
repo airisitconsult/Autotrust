@@ -17,9 +17,27 @@ class VehicleCondition(str, enum.Enum):
 
 
 class VehicleStatus(str, enum.Enum):
+    # Not public. A seller's car stays a draft until it passes inspection.
     DRAFT = "draft"
     LISTED = "listed"
+    # A buyer has started buying it (an order is open) — hidden from search so
+    # nobody else can buy the same car.
+    RESERVED = "reserved"
     SOLD = "sold"
+
+
+class BodyType(str, enum.Enum):
+    """The kind of car, as buyers shop for it."""
+
+    SEDAN = "sedan"
+    SUV = "suv"
+    HATCHBACK = "hatchback"
+    COUPE = "coupe"
+    WAGON = "wagon"
+    PICKUP = "pickup"
+    VAN = "van"
+    MINIVAN = "minivan"
+    CONVERTIBLE = "convertible"
 
 
 class VehicleFeature(str, enum.Enum):
@@ -60,6 +78,9 @@ class Vehicle(Base):
     mileage: Mapped[int] = mapped_column(Integer, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     condition: Mapped[VehicleCondition] = mapped_column(SAEnum(VehicleCondition), nullable=False)
+    # Plain string holding a BodyType value (nullable: listings created before
+    # this field existed have none).
+    body_type: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     # Structured Nigerian location (see app/core/nigeria_locations.py) rather
     # than a free-text field — precise, filterable, and matches how every
     # Nigerian car marketplace represents "where is this car" (State + LGA).
@@ -86,6 +107,14 @@ class Vehicle(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    @property
+    def gallery_photos(self) -> list["VehiclePhoto"]:
+        return [p for p in self.photos if p.kind != "spin"]
+
+    @property
+    def spin_frames(self) -> list["VehiclePhoto"]:
+        return [p for p in self.photos if p.kind == "spin"]
+
     # selectin: load all photos for a page of vehicles in one extra query
     # instead of one query per vehicle. First photo (by created_at) is the cover.
     photos: Mapped[list["VehiclePhoto"]] = relationship(
@@ -107,6 +136,9 @@ class VehiclePhoto(Base):
         Uuid(as_uuid=True), ForeignKey("vehicles.id"), nullable=False, index=True
     )
     storage_key: Mapped[str] = mapped_column(String, nullable=False)
+    # "photo" = a normal gallery picture. "spin" = one frame of the 360-degree
+    # walk-around set (ordered by when it was uploaded).
+    kind: Mapped[str] = mapped_column(String, nullable=False, default="photo", server_default="photo")
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -115,7 +147,7 @@ class VehiclePhoto(Base):
 
     @property
     def url(self) -> str:
-        return storage.public_url(self.storage_key, "full")
+        return storage.public_url(self.storage_key, "spin" if self.kind == "spin" else "full")
 
     @property
     def thumb_url(self) -> str:

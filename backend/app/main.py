@@ -8,8 +8,9 @@ from app.core import storage
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
-from app.models import inspection, user, vehicle  # noqa: F401 - import registers the models on Base.metadata
-from app.routers import admin, advisor, auth, inspections, reference, vehicles
+from app.db.migrate import upgrade_schema
+from app.models import email_token, enquiry, inspection, order, user, vehicle  # noqa: F401 - import registers the models on Base.metadata
+from app.routers import admin, advisor, auth, dashboard, enquiries, inspections, orders, reference, vehicles
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -26,6 +27,7 @@ app.add_middleware(
 # Phase 1: just create tables from models on startup. A real migration tool
 # (Alembic) can replace this once the schema needs versioned changes.
 Base.metadata.create_all(bind=engine)
+upgrade_schema(engine)
 
 if storage.backend_name() == "local":
     logger.warning(
@@ -41,6 +43,9 @@ app.include_router(vehicles.router)
 app.include_router(inspections.router)
 app.include_router(admin.router)
 app.include_router(advisor.router)
+app.include_router(dashboard.router)
+app.include_router(enquiries.router)
+app.include_router(orders.router)
 app.include_router(reference.router)
 
 

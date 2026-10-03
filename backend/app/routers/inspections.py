@@ -4,12 +4,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.dependencies import get_current_user, has_permission, require_inspection_access
+from app.dependencies import (
+    get_current_user,
+    has_permission,
+    require_inspection_access,
+    require_verified_user,
+)
 from app.models.user import Permission, User
 from app.schemas.inspection import InspectionComplete, InspectionCreate, InspectionRead
 from app.services import inspection_service
 from app.services.inspection_service import (
     InspectionAlreadyCompletedError,
+    InspectionNotAllowedError,
     InspectionNotFoundError,
     NotVehicleOwnerError,
     VehicleNotFoundError,
@@ -22,7 +28,7 @@ router = APIRouter(prefix="/inspections", tags=["inspections"])
 def request_inspection(
     payload: InspectionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_verified_user),
 ):
     try:
         return inspection_service.request_inspection(db, current_user, payload.vehicle_id)
@@ -33,6 +39,8 @@ def request_inspection(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not own this vehicle",
         )
+    except InspectionNotAllowedError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 # Must come before GET /{inspection_id} — same route-ordering gotcha as

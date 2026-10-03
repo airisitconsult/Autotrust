@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -6,7 +7,10 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.dependencies import require_permission, require_role
 from app.models.user import PERMISSION_DESCRIPTIONS, Permission, User, UserRole
-from app.repositories import user_repository
+from app.core.config import settings
+from app.repositories import user_repository, vehicle_repository
+from app.models.vehicle import BodyType, VehicleStatus
+from app.schemas.vehicle import AdminVehicleItem, AdminVehiclePage, VehicleRead
 from app.schemas.user import (
     MajorAdminCreate,
     PermissionInfo,
@@ -119,3 +123,61 @@ def set_user_role(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin accounts can only be managed by the super admin",
         )
+
+
+# ---------------------------------------------------------------------------
+# Listings overview — needs the MANAGE_LISTINGS permission (the super admin
+# always has it). One switch between the two kinds of stock.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/vehicles", response_model=AdminVehiclePage)
+def list_all_vehicles(
+    scope: Literal["sellers", "company"] = Query(
+        "sellers", description="'sellers' = cars listed by sellers; 'company' = cars AutoTrust lists itself"
+    ),
+    status_: VehicleStatus | None = Query(None, alias="status"),
+    make: str | None = None,
+    model: str | None = Query(None, max_length=60),
+    body_type: BodyType | None = None,
+    min_year: int | None = Query(None, ge=1980),
+    max_year: int | None = Query(None, le=2100),
+    min_price: float | None = Query(None, ge=0),
+    max_price: float | None = Query(None, ge=0),
+    state: str | None = None,
+    lga: str | None = None,
+    is_vetted: bool | None = None,
+    seller: str | None = Query(None, max_length=100, description="Seller email contains"),
+    seller_id: uuid.UUID | None = None,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_permission(Permission.MANAGE_LISTINGS)),
+):
+    rows, total = vehicle_repository.list_vehicles_admin(
+        db,
+        company_email=settings.COMPANY_ACCOUNT_EMAIL,
+        scope=scope,
+        status=status_,
+        make=make,
+        model=model,
+        body_type=body_type.value if body_type else None,
+        min_year=min_year,
+        max_year=max_year,
+        min_price=min_price,
+        max_price=max_price,
+        state=state,
+        lga=lga,
+        is_vetted=is_vetted,
+        seller=seller,
+        seller_id=seller_id,
+        limit=limit,
+        offset=offset,
+    )
+    return AdminVehiclePage(
+        items=[
+            AdminVehicleItem(vehicle=VehicleRead.model_validate(v), owner_email=email)
+            for v, email in rows
+        ],
+        total=total,
+    )

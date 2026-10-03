@@ -17,6 +17,7 @@ and photos from either backend keep working side by side if you switch.
 
 import io
 import logging
+import os
 import uuid
 from pathlib import Path
 from urllib.parse import quote
@@ -30,7 +31,8 @@ logger = logging.getLogger(__name__)
 
 # Anchored to the backend folder, not the process working directory, so it
 # resolves the same no matter where uvicorn was launched from.
-UPLOAD_DIR = Path(__file__).resolve().parents[2] / "uploads"
+# AUTOTRUST_UPLOAD_DIR lets automated tests write somewhere disposable.
+UPLOAD_DIR = Path(os.environ.get("AUTOTRUST_UPLOAD_DIR") or Path(__file__).resolve().parents[2] / "uploads")
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
 
@@ -45,6 +47,8 @@ _CLOUDINARY_TIMEOUT_SECONDS = 30
 _VARIANTS = {
     "full": "c_limit,f_auto,q_auto,w_1600",
     "thumb": "c_fill,f_auto,g_auto,h_480,q_auto,w_640",
+    # 360-degree spin frames: a viewer loads 24+ of them, so each is lighter.
+    "spin": "c_limit,f_auto,q_auto,w_960",
 }
 
 # Detected from the file's own leading bytes ("magic numbers"), never from the

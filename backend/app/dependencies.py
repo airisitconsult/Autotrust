@@ -60,12 +60,32 @@ def get_optional_user(
     return user_repository.get_user_by_email(db, email) if email else None
 
 
+def require_verified_user(current_user: User = Depends(get_current_user)) -> User:
+    """For actions with consequences (listing, enquiring, buying): the user
+    must have confirmed their email address."""
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address first. Check your inbox for the link.",
+        )
+    return current_user
+
+
+def require_seller(current_user: User = Depends(require_verified_user)) -> User:
+    """Listing a car needs a verified seller account (or the company's own
+    account). Buyers can switch to a seller account with /auth/become-seller."""
+    if current_user.role not in (UserRole.SELLER, UserRole.SUPER_ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only seller accounts can list cars. Switch to a seller account first.",
+        )
+    return current_user
+
+
 def has_permission(user: User, permission: Permission) -> bool:
     """The super admin holds every permission; a major admin only those the
     super admin granted; nobody else has any."""
-    if user.role == UserRole.SUPER_ADMIN:
-        return True
-    return user.role == UserRole.ADMIN and permission.value in user.permissions
+    return user.can(permission)
 
 
 def _forbidden() -> HTTPException:

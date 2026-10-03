@@ -33,12 +33,22 @@ def register_user(db: Session, user_in: UserCreate) -> User:
     if is_reserved_email(user_in.email) or user_repository.get_user_by_email(db, user_in.email):
         raise EmailAlreadyRegisteredError(user_in.email)
     hashed = hash_password(user_in.password)
-    # Registration never grants anything but BUYER. UserCreate has no role
-    # field, and privileged roles come only from the super admin (see
-    # admin_service) or the bootstrap script.
-    return user_repository.create_user(
-        db, email=user_in.email, hashed_password=hashed, role=UserRole.BUYER
-    )
+    # Registration only ever yields a BUYER or SELLER. Privileged roles come
+    # only from the super admin (see admin_service) or the bootstrap script.
+    role = UserRole.SELLER if user_in.account_type == "seller" else UserRole.BUYER
+    return user_repository.create_user(db, email=user_in.email, hashed_password=hashed, role=role)
+
+
+class CannotBecomeSellerError(Exception):
+    """Only buyer accounts switch to seller (staff and inspectors can't)."""
+
+
+def become_seller(db: Session, user: User) -> User:
+    if user.role == UserRole.SELLER:
+        return user
+    if user.role != UserRole.BUYER:
+        raise CannotBecomeSellerError(user.role)
+    return user_repository.update_user_role(db, user, UserRole.SELLER)
 
 
 class ProtectedRoleError(Exception):

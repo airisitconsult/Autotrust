@@ -23,6 +23,7 @@ def list_vehicles(
     min_year: int | None = None,
     max_year: int | None = None,
     condition: VehicleCondition | None = None,
+    body_type: str | None = None,
     state: str | None = None,
     lga: str | None = None,
     is_vetted: bool | None = None,
@@ -53,6 +54,8 @@ def list_vehicles(
         query = query.filter(Vehicle.year <= max_year)
     if condition is not None:
         query = query.filter(Vehicle.condition == condition)
+    if body_type is not None:
+        query = query.filter(Vehicle.body_type == body_type)
     if state is not None:
         query = query.filter(Vehicle.state == state)
     if lga is not None:
@@ -163,8 +166,8 @@ def update_vehicle(db: Session, vehicle: Vehicle, changes: dict) -> Vehicle:
     return vehicle
 
 
-def add_photo(db: Session, vehicle: Vehicle, storage_key: str) -> VehiclePhoto:
-    photo = VehiclePhoto(vehicle_id=vehicle.id, storage_key=storage_key)
+def add_photo(db: Session, vehicle: Vehicle, storage_key: str, kind: str = "photo") -> VehiclePhoto:
+    photo = VehiclePhoto(vehicle_id=vehicle.id, storage_key=storage_key, kind=kind)
     db.add(photo)
     db.commit()
     db.refresh(photo)
@@ -188,3 +191,66 @@ def delete_photo(db: Session, photo: VehiclePhoto) -> None:
 def delete_vehicle(db: Session, vehicle: Vehicle) -> None:
     db.delete(vehicle)
     db.commit()
+
+
+def list_vehicles_admin(
+    db: Session,
+    company_email: str,
+    scope: str,
+    status: VehicleStatus | None = None,
+    make: str | None = None,
+    model: str | None = None,
+    body_type: str | None = None,
+    min_year: int | None = None,
+    max_year: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    state: str | None = None,
+    lga: str | None = None,
+    is_vetted: bool | None = None,
+    seller: str | None = None,
+    seller_id: uuid.UUID | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[tuple[Vehicle, str]], int]:
+    """Every listing regardless of status, for staff. `scope` is "company"
+    (cars AutoTrust lists itself) or "sellers" (everyone else's). Returns the
+    page of (vehicle, owner email) pairs and the total matching count."""
+    from sqlalchemy import func, or_
+
+    from app.models.user import User, UserRole
+
+    query = db.query(Vehicle, User.email).join(User, Vehicle.owner_id == User.id)
+    is_company = or_(User.role == UserRole.SUPER_ADMIN, func.lower(User.email) == company_email.lower())
+    query = query.filter(is_company if scope == "company" else ~is_company)
+
+    if status is not None:
+        query = query.filter(Vehicle.status == status)
+    if make:
+        query = query.filter(Vehicle.make.ilike(make))
+    if model:
+        query = query.filter(Vehicle.model.ilike(f"%{model}%"))
+    if body_type:
+        query = query.filter(Vehicle.body_type == body_type)
+    if min_year is not None:
+        query = query.filter(Vehicle.year >= min_year)
+    if max_year is not None:
+        query = query.filter(Vehicle.year <= max_year)
+    if min_price is not None:
+        query = query.filter(Vehicle.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Vehicle.price <= max_price)
+    if state:
+        query = query.filter(Vehicle.state == state)
+    if lga:
+        query = query.filter(Vehicle.lga == lga)
+    if is_vetted is not None:
+        query = query.filter(Vehicle.is_vetted == is_vetted)
+    if seller:
+        query = query.filter(User.email.ilike(f"%{seller}%"))
+    if seller_id is not None:
+        query = query.filter(Vehicle.owner_id == seller_id)
+
+    total = query.count()
+    rows = query.order_by(Vehicle.created_at.desc()).offset(offset).limit(limit).all()
+    return [(vehicle, email) for vehicle, email in rows], total

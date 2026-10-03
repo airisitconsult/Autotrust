@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core import gemini
 from app.models.inspection import Inspection, InspectionStatus
 from app.models.user import User
+from app.models.vehicle import VehicleStatus
 from app.repositories import inspection_repository, vehicle_repository
 
 
@@ -24,12 +25,22 @@ class InspectionAlreadyCompletedError(Exception):
     pass
 
 
+class InspectionNotAllowedError(Exception):
+    """The request breaks a rule; the message is user-facing."""
+
+
 def request_inspection(db: Session, requester: User, vehicle_id: uuid.UUID) -> Inspection:
     vehicle = vehicle_repository.get_vehicle_by_id(db, vehicle_id)
     if vehicle is None:
         raise VehicleNotFoundError(vehicle_id)
     if vehicle.owner_id != requester.id:
         raise NotVehicleOwnerError(vehicle_id)
+    if vehicle.status in (VehicleStatus.RESERVED, VehicleStatus.SOLD):
+        raise InspectionNotAllowedError("A sale has started for this car, so it can't be inspected now.")
+    if vehicle.is_vetted:
+        raise InspectionNotAllowedError("This car has already passed inspection.")
+    if inspection_repository.has_pending_inspection(db, vehicle_id):
+        raise InspectionNotAllowedError("An inspection is already waiting for this car.")
     return inspection_repository.create_inspection(
         db, vehicle_id=vehicle_id, requested_by_id=requester.id
     )
@@ -77,5 +88,9 @@ def complete_inspection(
     # this is the "real" path to vetting, is_vetted-by-company-ownership was
     # always meant as the light stand-in for this.
     if passed and vehicle is not None:
-        vehicle_repository.update_vehicle(db, vehicle, {"is_vetted": True})
+        # Passing is what puts a seller's car on sale: vetted AND public. A
+        # failed car stays a private draft (the seller can fix it and ask again).
+        vehicle_repository.update_vehicle(
+            db, vehicle, {"is_vetted": True, "status": VehicleStatus.LISTED}
+        )
     return updated

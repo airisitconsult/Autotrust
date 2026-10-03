@@ -32,8 +32,9 @@ def create_super_admin(db: Session, email: str, password: str) -> User:
     hashed = hash_password(password)
     existing = user_repository.get_user_by_email(db, email)
     if existing is None:
-        return user_repository.create_user(db, email, hashed, UserRole.SUPER_ADMIN)
+        return user_repository.create_user(db, email, hashed, UserRole.SUPER_ADMIN, email_verified=True)
     existing.hashed_password = hashed
+    user_repository.mark_email_verified(db, existing)
     return user_repository.update_user_access(db, existing, UserRole.SUPER_ADMIN, [])
 
 
@@ -51,6 +52,7 @@ def create_major_admin(db: Session, payload: MajorAdminCreate) -> User:
         hashed_password=hash_password(payload.password),
         role=UserRole.ADMIN,
         permissions=_clean(payload.permissions),
+        email_verified=True,  # the super admin vouches for this address
     )
 
 

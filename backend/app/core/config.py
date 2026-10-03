@@ -25,6 +25,32 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = "replace-with-your-gemini-api-key"
     GEMINI_MODEL: str = "gemini-2.0-flash"
 
+    # "development" logs outgoing emails (including verification links) to the
+    # server console when SMTP isn't configured. Set to "production" to stop that.
+    APP_ENV: str = "development"
+    # Where the website lives; used to build links in emails.
+    FRONTEND_URL: str = "http://localhost:3100"
+
+    # Outgoing email (SMTP). Leave SMTP_HOST empty to disable sending.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "AutoTrust <no-reply@autotrust.com>"
+    SMTP_USE_TLS: bool = True
+    EMAIL_VERIFICATION_TTL_HOURS: int = 24
+
+    # Money. AutoTrust receives the buyer's transfer here, then pays the
+    # seller their share. Orders are refused until these are filled in, so
+    # buyers never see placeholder bank details.
+    COMPANY_BANK_NAME: str = ""
+    COMPANY_BANK_ACCOUNT_NUMBER: str = ""
+    COMPANY_BANK_ACCOUNT_NAME: str = ""
+    PLATFORM_FEE_RATE: float = 0.05
+    PAYMENT_WINDOW_HOURS: int = 48
+    # The currency prices are quoted in (listings are currently entered in USD).
+    CURRENCY_CODE: str = "USD"
+
     # Cloudinary (image storage) — from the dashboard at cloudinary.com/console.
     # When all three are set, vehicle photos are stored there; otherwise they
     # go to local disk (development only — see app/core/storage.py).
@@ -40,7 +66,9 @@ class Settings(BaseSettings):
     # Comma-separated list of origins the frontend is allowed to call the API
     # from. Vite's dev server defaults to 5173; 3000 covers other common
     # React dev setups.
-    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    CORS_ORIGINS: str = (
+        "http://localhost:3100,http://127.0.0.1:3100,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

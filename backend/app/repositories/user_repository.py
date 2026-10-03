@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -29,9 +30,14 @@ def create_user(
     hashed_password: str,
     role: UserRole,
     permissions: list[str] | None = None,
+    email_verified: bool = False,
 ) -> User:
     user = User(
-        email=email, hashed_password=hashed_password, role=role, permissions=permissions or []
+        email=email,
+        hashed_password=hashed_password,
+        role=role,
+        permissions=permissions or [],
+        email_verified_at=datetime.now(timezone.utc) if email_verified else None,
     )
     db.add(user)
     db.commit()
@@ -69,3 +75,22 @@ def list_users(
     if role is not None:
         query = query.filter(User.role == role)
     return query.order_by(User.created_at.desc()).offset(offset).limit(limit).all()
+
+
+def mark_email_verified(db: Session, user: User) -> User:
+    if user.email_verified_at is None:
+        user.email_verified_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(user)
+    return user
+
+
+def update_bank_details(
+    db: Session, user: User, bank_name: str, account_number: str, account_name: str
+) -> User:
+    user.bank_name = bank_name
+    user.bank_account_number = account_number
+    user.bank_account_name = account_name
+    db.commit()
+    db.refresh(user)
+    return user

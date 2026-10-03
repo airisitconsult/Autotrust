@@ -59,3 +59,16 @@ def complete_inspection(
     db.commit()
     db.refresh(inspection)
     return inspection
+
+
+def vehicle_has_inspections(db: Session, vehicle_id: uuid.UUID) -> bool:
+    return db.query(Inspection.id).filter(Inspection.vehicle_id == vehicle_id).first() is not None
+
+
+def has_pending_inspection(db: Session, vehicle_id: uuid.UUID) -> bool:
+    return (
+        db.query(Inspection.id)
+        .filter(Inspection.vehicle_id == vehicle_id, Inspection.status == InspectionStatus.PENDING)
+        .first()
+        is not None
+    )
