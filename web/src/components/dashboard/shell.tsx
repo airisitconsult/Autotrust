@@ -159,7 +159,7 @@ function SidebarContent({
                 }}
                 className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-night-muted transition hover:bg-night-700 hover:text-night-text"
               >
-                <Icon name="spark" /> AI assistant
+                <Icon name="spark" /> AutoTrustAI
               </button>
             </li>
           </ul>

@@ -16,7 +16,7 @@ export default function AdvisorPage() {
         <div>
           <div className="flex items-center gap-2 text-brand-600">
             <SparkIcon />
-            <span className="text-sm font-bold uppercase tracking-wide">AutoTrust AI Assistant</span>
+            <span className="text-sm font-bold uppercase tracking-wide">AutoTrustAI</span>
           </div>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-ink-950 sm:text-3xl">
             Find the right car, by chatting

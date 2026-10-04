@@ -149,7 +149,7 @@ export default async function CarsPage({
                 <ButtonLink href={carsHref({}, 1, view)} variant="secondary">
                   Clear filters
                 </ButtonLink>
-                <OpenChatButton size="md">Ask the AI assistant</OpenChatButton>
+                <OpenChatButton size="md">Ask AutoTrustAI</OpenChatButton>
               </div>
             </div>
           ) : (

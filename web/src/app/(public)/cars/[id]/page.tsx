@@ -180,7 +180,7 @@ export default async function CarPage({ params }: Props) {
               <OwnerActions vehicle={vehicle} />
               <BuyPanel vehicle={vehicle} />
               <OpenChatButton variant="ghost" size="sm" className="w-full">
-                Ask the AI assistant about this car
+                Ask AutoTrustAI about this car
               </OpenChatButton>
             </div>
           </div>

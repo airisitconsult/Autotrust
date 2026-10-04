@@ -1,0 +1,28 @@
+# Runs the AutoTrust API in Docker.
+#
+#   docker compose up --build        # API on http://localhost:8000
+#   docker compose down              # stop
+#   docker compose down -v           # stop and delete the uploads volume
+#
+# Settings come from backend/.env (copy backend/.env.example and fill it in).
+#
+# Database: put your Neon connection string in DATABASE_URL in backend/.env.
+# If you leave the default SQLite value, the database lives inside the
+# container and is lost whenever it is rebuilt, so use Neon for anything real.
+#
+# Photos: the line below keeps local-disk uploads in a volume. Skip it by
+# filling in the CLOUDINARY_* values in backend/.env (recommended).
+services:
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      AUTOTRUST_UPLOAD_DIR: /data/uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - autotrust-data:/data
+    restart: unless-stopped
+
+volumes:
+  autotrust-data:

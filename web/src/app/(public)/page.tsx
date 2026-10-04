@@ -41,7 +41,7 @@ const trust = [
 ];
 
 const buyingSteps = [
-  ["Search or ask the AI", "Filter by location, type, brand and budget, or just describe what you need."],
+  ["Search or ask AutoTrustAI", "Filter by location, type, brand and budget, or just describe what you need."],
   ["Enquire with the seller", "Message them through AutoTrust. Your email stays private."],
   ["Pay AutoTrust by transfer", "The car is reserved for you. We confirm your payment."],
   ["Collect and confirm", "Once you have the car, confirm it and the seller is paid."],
@@ -90,7 +90,7 @@ export default async function HomePage() {
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-relaxed text-brand-100/90 sm:text-lg">
-              Quality used cars, inspected in person and explained in plain language. Affordable prices, no
+              Quality cars, inspected in person and explained in plain language. Affordable prices, no
               guesswork, and your money protected until the car is yours.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -277,12 +277,12 @@ export default async function HomePage() {
             <div>
               <h2 className="text-2xl font-extrabold tracking-tight sm:text-4xl">Not sure which car to buy?</h2>
               <p className="mt-3 max-w-xl text-brand-100">
-                Tell our AI assistant your budget, how you drive and who rides with you. It suggests what
+                Tell AutoTrustAI your budget, how you drive and who rides with you. It suggests what
                 suits you, then shows matching cars from real listings.
               </p>
               <div className="mt-6">
                 <OpenChatButton className="!bg-white !text-brand-800 hover:!bg-brand-50">
-                  Chat with the assistant
+                  Chat with AutoTrustAI
                 </OpenChatButton>
               </div>
             </div>

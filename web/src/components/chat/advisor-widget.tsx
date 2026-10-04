@@ -13,7 +13,8 @@ function isPhoneWidth() {
 }
 
 /** The chatbot: a bubble in the corner of every storefront page that opens a
- * chat window. On phones the window takes the whole screen. Hidden on the
+ * chat window. On phones the window is a bottom sheet covering half the
+ * screen (full width, 50% height), not full screen. Hidden on the
  * full-page chat (/advisor), which shows the same conversation. */
 export function AdvisorWidget() {
   const { open, setOpen, reset, turns } = useAdvisorChat();
@@ -69,16 +70,16 @@ export function AdvisorWidget() {
       {open ? (
         <div
           role="dialog"
-          aria-label="AutoTrust car assistant"
-          className="fixed inset-0 z-50 flex flex-col bg-ink-50 sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[38rem] sm:max-h-[calc(100vh-2.5rem)] sm:w-[26rem] sm:overflow-hidden sm:rounded-3xl sm:shadow-2xl sm:ring-1 sm:ring-ink-200"
+          aria-label="AutoTrustAI car assistant"
+          className={`fixed inset-x-0 z-50 flex h-[50dvh] flex-col overflow-hidden rounded-t-2xl bg-ink-50 shadow-2xl ring-1 ring-ink-200 sm:inset-x-auto sm:right-5 sm:h-[38rem] sm:max-h-[calc(100vh-2.5rem)] sm:w-[26rem] sm:rounded-3xl ${aboveBar ? "bottom-20 lg:bottom-5" : "bottom-0 sm:bottom-5"}`}
         >
-          <header className="flex items-center gap-3 bg-gradient-to-r from-brand-950 to-brand-800 px-4 py-3.5 text-white">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
+          <header className="flex items-center gap-2 bg-gradient-to-r from-brand-950 to-brand-800 px-3 py-2.5 text-white sm:gap-3 sm:px-4 sm:py-3.5">
+            <div className="hidden h-10 w-10 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20 sm:flex">
               <SparkIcon />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-bold leading-tight">AutoTrust Assistant</p>
-              <p className="text-xs text-brand-200">AI help choosing your next car</p>
+              <p className="truncate font-bold leading-tight">AutoTrustAI</p>
+              <p className="truncate text-[11px] text-brand-200 sm:text-xs">Help choosing your next car</p>
             </div>
             {turns.length > 0 && (
               <button
@@ -135,11 +136,11 @@ export function AdvisorWidget() {
           )}
           <button
             onClick={() => setOpen(true)}
-            aria-label="Chat with the AutoTrust AI assistant"
+            aria-label="Chat with AutoTrustAI"
             className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lift ring-4 ring-white/70 transition hover:scale-105 sm:h-auto sm:w-auto sm:gap-2 sm:px-5 sm:py-3.5"
           >
             <SparkIcon className="h-6 w-6 sm:h-5 sm:w-5" />
-            <span className="hidden text-sm font-semibold sm:inline">Ask AI</span>
+            <span className="hidden text-sm font-semibold sm:inline">Ask AutoTrustAI</span>
           </button>
         </div>
       )}

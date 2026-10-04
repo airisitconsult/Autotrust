@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AI car assistant",
+  title: "AutoTrustAI car assistant",
   description: "Chat with the AutoTrust assistant to work out which used car suits your budget and needs.",
 };
 

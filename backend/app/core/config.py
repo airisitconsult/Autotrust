@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +14,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # SQLite file by default; paste a Neon (Postgres) connection string to use
+    # Neon instead. See _normalize_database_url below.
     DATABASE_URL: str = "sqlite:///./app.db"
 
     # The one designated AutoTrust company account. Any vehicle listed by
@@ -69,6 +72,21 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = (
         "http://localhost:3100,http://127.0.0.1:3100,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
     )
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _normalize_database_url(cls, url: str) -> str:
+        """Accept the connection string exactly as Neon shows it.
+
+        Neon gives `postgresql://user:pass@host/db?sslmode=require`; SQLAlchemy
+        needs to be told which driver to use, so `postgres://` and
+        `postgresql://` become `postgresql+psycopg://` (psycopg 3).
+        """
+        url = url.strip()
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix):]
+        return url
 
     @property
     def cors_origins_list(self) -> list[str]:

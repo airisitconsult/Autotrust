@@ -8,8 +8,9 @@ Add a row to COLUMNS whenever you add a column to an existing model. The
 optional backfill SQL runs once, only when the column was just added (e.g. to
 mark existing users as already verified).
 
-This is deliberately SQLite-only. For production, use real migrations
-(Alembic) — see the project notes.
+This is deliberately SQLite-only. A new Postgres (Neon) database gets every
+column from `create_all`, but later column additions to an existing Neon
+database need real migrations (Alembic).
 """
 
 import logging

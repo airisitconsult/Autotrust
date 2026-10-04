@@ -6,7 +6,7 @@ const columns = [
     links: [
       { href: "/cars", label: "Browse cars" },
       { href: "/cars?is_vetted=true", label: "Vetted cars only" },
-      { href: "/advisor", label: "AI car advisor" },
+      { href: "/advisor", label: "AutoTrustAI car advisor" },
     ],
   },
   {

@@ -54,7 +54,7 @@ export function Navbar() {
             </Link>
           ))}
           <button onClick={openChat} className={cn(linkClass(false), "inline-flex items-center gap-1.5")}>
-            <SparkIcon className="h-4 w-4 text-brand-600" /> AI Assistant
+            <SparkIcon className="h-4 w-4 text-brand-600" /> AutoTrustAI
           </button>
         </div>
 
@@ -121,7 +121,7 @@ export function Navbar() {
             onClick={openChat}
             className="flex items-center gap-2 rounded-xl px-3 py-3 text-left text-base font-medium text-ink-800 hover:bg-ink-100"
           >
-            <SparkIcon className="h-5 w-5 text-brand-600" /> AI Assistant
+            <SparkIcon className="h-5 w-5 text-brand-600" /> AutoTrustAI
           </button>
         </div>
         <div className="border-t border-ink-100 p-4">
